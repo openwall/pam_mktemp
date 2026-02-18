@@ -168,7 +168,10 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
 
 	if (!(pw = getpwnam(user)))
 		return PAM_USER_UNKNOWN;
-	memset(pw->pw_passwd, 0, strlen(pw->pw_passwd));
+
+/* Scrub password if it looks like a real hash */
+	if (strlen(pw->pw_passwd) >= 13)
+		memset(pw->pw_passwd, 0, strlen(pw->pw_passwd));
 
 /* Could have multiple UID 0 accounts, no need for separate directories */
 	if (pw->pw_uid == 0) user = "root";
@@ -177,7 +180,10 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags,
  * to su to another user (or root) even if su doesn't use this module. */
 	usergroups = 0;
 	if (pw->pw_uid != 0 && (gr = getgrgid(pw->pw_gid))) {
-		memset(gr->gr_passwd, 0, strlen(gr->gr_passwd));
+/* Scrub password if it looks like a real hash */
+		if (strlen(gr->gr_passwd) >= 13)
+			memset(gr->gr_passwd, 0, strlen(gr->gr_passwd));
+
 		if (!strcmp(user, gr->gr_name)) usergroups = 1;
 	}
 
